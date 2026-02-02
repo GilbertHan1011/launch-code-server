@@ -202,14 +202,18 @@ class DirectFabricExecutor(SSHExecutor):
     """
     def __init__(self, host: str, user: str, port: Optional[int] = None, gateway: Optional[Connection] = None, connect_kwargs: Optional[dict] = None):
         logging.info(f"🔌 Mode: Direct Connection ({user}@{host})")
+        # Merge timeout into connect_kwargs (Fabric uses 'timeout' not 'connect_timeout')
+        final_kwargs = connect_kwargs or {}
+        if 'timeout' not in final_kwargs:
+            final_kwargs['timeout'] = 90
+        
         self.conn = Connection(
             host, 
             user=user, 
             port=port, 
             gateway=gateway,
-            connect_kwargs=connect_kwargs or {},
-            inline_ssh_env=True,
-            connect_timeout=90
+            connect_kwargs=final_kwargs,
+            inline_ssh_env=True
         )
         self._try_connect()
 
@@ -526,7 +530,7 @@ def create_connection(args, user: str, host: str) -> SSHExecutor:
         user, 
         args.port, 
         gateway=gateway, 
-        connect_kwargs={'connect_timeout': 90}
+        connect_kwargs={'timeout': 90}
     )
 
 # --- Main Entry Point ---
