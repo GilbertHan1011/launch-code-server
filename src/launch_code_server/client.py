@@ -280,15 +280,20 @@ class DirectFabricExecutor(SSHExecutor):
 
         logging.info(f"🔗 Tunneling (ssh): localhost:{local_port} -> {remote_host}:{remote_port}")
 
-        # If the remote requires OTP/keyboard-interactive, use SSH_ASKPASS to supply it
-        otp = getpass.getpass(f"({target_user}@{target_host}) One-time password (OATH): ")
+        # If the remote requires keyboard-interactive, use SSH_ASKPASS to supply it.
+        # Some clusters expect "Password+OTP" or "OTP" in a single prompt.
+        pass_otp = os.environ.get("LCS_PASS_OTP")
+        if not pass_otp:
+            pass_otp = getpass.getpass(
+                f"({target_user}@{target_host}) Password/OTP (same as manual ssh): "
+            )
         askpass_path = None
         try:
             import tempfile
             with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                 askpass_path = f.name
                 f.write("#!/bin/bash\n")
-                f.write(f"echo \"{otp}\"\n")
+                f.write(f"echo \"{pass_otp}\"\n")
             os.chmod(askpass_path, 0o700)
 
             env = os.environ.copy()
@@ -315,6 +320,7 @@ class DirectFabricExecutor(SSHExecutor):
                 logging.error("❌ Tunnel died immediately!")
                 logging.error(f"Reason: {stderr.decode() if stderr else 'Unknown'}")
                 logging.info(f"Debug Command: {' '.join(cmd)}")
+                raise RuntimeError("SSH tunnel failed to start")
             yield
         finally:
             logging.info("🛑 Closing tunnel...")
