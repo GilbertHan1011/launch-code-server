@@ -80,22 +80,32 @@
 
     <section class="summary">
       <h2>Effective config</h2>
-      <table class="table">
-        <thead>
-          <tr><th>Field</th><th>Effective value</th><th>Source</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>mode</td><td><code>{{ effective.mode }}</code></td><td><code>{{ effective._sources.mode }}</code></td></tr>
-          <tr><td>destination</td><td><code>{{ effective.destination }}</code></td><td><code>{{ effective._sources.destination }}</code></td></tr>
-          <tr><td>ssh_port</td><td><code>{{ effective.ssh_port }}</code></td><td><code>{{ effective._sources.ssh_port }}</code></td></tr>
-          <tr><td>router_address</td><td><code>{{ effective.router_address }}</code></td><td><code>{{ effective._sources.router_address }}</code></td></tr>
-          <tr><td>router_socket_path</td><td><code>{{ effective.router_socket_path }}</code></td><td><code>{{ effective._sources.router_socket_path }}</code></td></tr>
-          <tr><td>hpc_real_host</td><td><code>{{ effective.hpc_real_host }}</code></td><td><code>{{ effective._sources.hpc_real_host }}</code></td></tr>
-          <tr><td>hpc_real_port</td><td><code>{{ effective.hpc_real_port }}</code></td><td><code>{{ effective._sources.hpc_real_port }}</code></td></tr>
-          <tr><td>partition</td><td><code>{{ effective.partition }}</code></td><td><code>{{ effective._sources.partition }}</code></td></tr>
-          <tr><td>env_name</td><td><code>{{ effective.env_name }}</code></td><td><code>{{ effective._sources.env_name }}</code></td></tr>
-        </tbody>
-      </table>
+      <form class="form" method="post" action="/launch/profile/{{ profile.id }}{% if task %}?task_id={{ task.id }}{% endif %}">
+        <table class="table">
+          <thead>
+            <tr><th>Field</th><th>Value</th><th>Source</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>mode</td><td>
+              <select name="mode">
+                <option value="direct" {% if effective.mode == 'direct' %}selected{% endif %}>direct</option>
+                <option value="router_socket" {% if effective.mode == 'router_socket' %}selected{% endif %}>router_socket</option>
+              </select>
+            </td><td><code>{{ effective._sources.mode }}</code></td></tr>
+            <tr><td>destination</td><td><input type="text" name="destination" value="{{ effective.destination }}" /></td><td><code>{{ effective._sources.destination }}</code></td></tr>
+            <tr><td>ssh_port</td><td><input type="number" name="ssh_port" value="{{ effective.ssh_port }}" /></td><td><code>{{ effective._sources.ssh_port }}</code></td></tr>
+            <tr><td>router_address</td><td><input type="text" name="router_address" value="{{ effective.router_address }}" /></td><td><code>{{ effective._sources.router_address }}</code></td></tr>
+            <tr><td>router_socket_path</td><td><input type="text" name="router_socket_path" value="{{ effective.router_socket_path }}" /></td><td><code>{{ effective._sources.router_socket_path }}</code></td></tr>
+            <tr><td>hpc_real_host</td><td><input type="text" name="hpc_real_host" value="{{ effective.hpc_real_host }}" /></td><td><code>{{ effective._sources.hpc_real_host }}</code></td></tr>
+            <tr><td>hpc_real_port</td><td><input type="number" name="hpc_real_port" value="{{ effective.hpc_real_port }}" /></td><td><code>{{ effective._sources.hpc_real_port }}</code></td></tr>
+            <tr><td>partition</td><td><input type="text" name="partition" value="{{ effective.partition }}" /></td><td><code>{{ effective._sources.partition }}</code></td></tr>
+            <tr><td>env_name</td><td><input type="text" name="env_name" value="{{ effective.env_name }}" /></td><td><code>{{ effective._sources.env_name }}</code></td></tr>
+          </tbody>
+        </table>
+        <div class="form-actions">
+          <button class="btn" type="submit">Save effective config to profile</button>
+        </div>
+      </form>
     </section>
 
     <section class="summary">
@@ -148,6 +158,7 @@
             <th>Profile</th>
             <th>Status</th>
             <th>Updated</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -157,6 +168,15 @@
               <td>{{ item.profile_name }}</td>
               <td>{{ item.status }}</td>
               <td>{{ item.updated_at }}</td>
+              <td>
+                {% if item.status in ['queued', 'running', 'pending'] %}
+                  <form method="post" action="/launch/stop/{{ item.id }}" class="inline">
+                    <button class="btn danger" type="submit">Stop</button>
+                  </form>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>

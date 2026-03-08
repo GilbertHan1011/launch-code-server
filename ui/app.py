@@ -204,6 +204,28 @@ async def diagnostics_run(request: Request) -> HTMLResponse:
     )
 
 
+@app.post("/launch/profile/{profile_id}", response_class=HTMLResponse)
+async def launch_profile_update(request: Request, profile_id: str) -> RedirectResponse:
+    form = dict(await request.form())
+    profile = get_profile(profile_id) or default_profile()
+    updated = dict(profile)
+    editable_fields = [
+        "mode", "destination", "ssh_port", "router_address", "router_socket_path",
+        "hpc_real_host", "hpc_real_port", "partition", "env_name"
+    ]
+    for key in editable_fields:
+        if key in form:
+            value = form.get(key)
+            if key in {"ssh_port", "hpc_real_port"}:
+                try:
+                    value = int(value) if value not in (None, "") else profile.get(key)
+                except Exception:
+                    value = profile.get(key)
+            updated[key] = value
+    save_profile(updated)
+    return RedirectResponse(url=f"/launch?task_id={request.query_params.get('task_id','')}", status_code=303)
+
+
 @app.get("/launch", response_class=HTMLResponse)
 def launch(request: Request, task_id: Optional[str] = None) -> HTMLResponse:
     profiles = _prepare_profiles()

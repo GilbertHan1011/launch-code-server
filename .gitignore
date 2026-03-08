@@ -7,3 +7,6 @@ build/
 *.egg
 *.whl
 *.egg-info/
+
+# Local UI runtime state
+ui/data/

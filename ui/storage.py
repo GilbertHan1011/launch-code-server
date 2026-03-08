@@ -141,6 +141,8 @@ def env_detection() -> Dict[str, str]:
 def effective_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
     effective = dict(profile)
     sources: Dict[str, str] = {}
+    has_profile_id = bool(profile.get("id"))
+
     for field in PROFILE_FIELDS:
         name = field["name"]
         current = effective.get(name)
@@ -149,18 +151,28 @@ def effective_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
         default_value = field["default"]
 
         if name == "mode":
-            sources[name] = "profile"
             effective[name] = current or default_value
+            sources[name] = "profile" if current not in (None, "") else "default"
             continue
 
-        if current not in (None, "", False):
-            sources[name] = "profile"
-        elif env_value not in (None, ""):
-            effective[name] = int(env_value) if name in INT_FIELDS else env_value
-            sources[name] = f"env:{env_key}"
-        else:
-            effective[name] = default_value
-            sources[name] = "default"
+        if current in (None, ""):
+            if env_value not in (None, ""):
+                effective[name] = int(env_value) if name in INT_FIELDS else env_value
+                sources[name] = f"env:{env_key}"
+            else:
+                effective[name] = default_value
+                sources[name] = "default"
+            continue
+
+        if has_profile_id and current == default_value:
+            if env_value not in (None, ""):
+                effective[name] = int(env_value) if name in INT_FIELDS else env_value
+                sources[name] = f"env:{env_key}"
+            else:
+                sources[name] = "default"
+            continue
+
+        sources[name] = "profile"
 
     effective["_sources"] = sources
     effective["_env"] = env_detection()

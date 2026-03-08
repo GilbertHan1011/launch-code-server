@@ -147,7 +147,16 @@ def launch_background(task_id: str, cwd: Optional[str] = None) -> Dict[str, Any]
             "with log_path.open('w', encoding='utf-8') as logf:\n"
             "    logf.write('$ ' + ' '.join(argv) + '\\n\\n')\n"
             "    logf.flush()\n"
-            "    proc = subprocess.Popen(argv, cwd=cwd, stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True)\n"
+            "    try:\n"
+            "        proc = subprocess.Popen(argv, cwd=cwd, stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True, env={**os.environ, 'PYTHONUNBUFFERED':'1'})\n"
+            "    except Exception as exc:\n"
+            "        logf.write('\\n[runner-error] ' + str(exc) + '\\n')\n"
+            "        logf.flush()\n"
+            "        task = json.loads(task_path.read_text(encoding='utf-8'))\n"
+            "        task['status'] = 'failed'\n"
+            "        task['error'] = str(exc)\n"
+            "        task_path.write_text(json.dumps(task, indent=2, ensure_ascii=False), encoding='utf-8')\n"
+            "        raise\n"
             "    task = json.loads(task_path.read_text(encoding='utf-8'))\n"
             "    task['child_pid'] = proc.pid\n"
             "    task_path.write_text(json.dumps(task, indent=2, ensure_ascii=False), encoding='utf-8')\n"
@@ -197,6 +206,7 @@ def launch_background(task_id: str, cwd: Optional[str] = None) -> Dict[str, Any]
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         start_new_session=True,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
     )
     task["pid"] = proc.pid
     task["status"] = "queued"

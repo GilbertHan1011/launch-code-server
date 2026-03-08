@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import shlex
 import subprocess
+import sys
 import time
 from typing import Any, Dict, List
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CLIENT_SCRIPT = REPO_ROOT / "src" / "launch_code_server" / "client.py"
+
 
 def build_launch_command(profile: Dict[str, Any]) -> List[str]:
-    cmd: List[str] = ["launch_server"]
+    cmd: List[str] = [sys.executable, str(CLIENT_SCRIPT)]
     destination = (profile.get("destination") or "").strip()
     if destination:
         cmd.append(destination)
@@ -82,6 +87,7 @@ def run_launch(profile: Dict[str, Any], timeout_seconds: int = 20) -> Dict[str, 
     cmd = build_launch_command(profile)
     started = time.perf_counter()
     env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
 
     result = subprocess.run(
         cmd,
