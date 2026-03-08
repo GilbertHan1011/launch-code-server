@@ -144,8 +144,6 @@ class RouterSocketExecutor(SSHExecutor):
         """
         logging.info(f"🔗 Tunneling: localhost:{local_port} -> Router -> {remote_host}:{remote_port}")
         
-        # 1. Extract HPC username (new logic)
-        # Extract "hanlitian" from "hanlitian@172.16.78.132"
         try:
             hpc_user = self.config.hpc_host.split('@')[0]
         except IndexError:
@@ -250,9 +248,89 @@ class DirectFabricExecutor(SSHExecutor):
 
     @contextlib.contextmanager
     def forward_local(self, local_port: int, remote_port: int, remote_host: str):
-        """Use Fabric's built-in port forwarding."""
-        with self.conn.forward_local(local_port, remote_port, remote_host):
+        """
+        Use system ssh to establish local port forwarding.
+        Fabric/Paramiko forward_local can be flaky in some environments.
+        """
+        # Build base ssh command
+        cmd = [
+            "ssh",
+            "-N",
+            "-L", f"{local_port}:{remote_host}:{remote_port}",
+            "-o", "PubkeyAuthentication=no",
+            "-o", "PreferredAuthentications=keyboard-interactive,password",
+            "-o", "KbdInteractiveAuthentication=yes",
+            "-o", "PasswordAuthentication=yes",
+            "-o", "NumberOfPasswordPrompts=1",
+        ]
+
+        # Support optional jump host (gateway)
+        if self.conn.gateway is not None:
+            gw = self.conn.gateway
+            gw_user = gw.user or self.conn.user
+            gw_host = gw.host
+            gw_port = gw.port or 22
+            cmd += ["-J", f"{gw_user}@{gw_host}:{gw_port}"]
+
+        # Target login host
+        target_user = self.conn.user
+        target_host = self.conn.host
+        target_port = self.conn.port or 22
+        cmd += ["-p", str(target_port), f"{target_user}@{target_host}"]
+
+        logging.info(f"🔗 Tunneling (ssh): localhost:{local_port} -> {remote_host}:{remote_port}")
+
+        # If the remote requires keyboard-interactive, use SSH_ASKPASS to supply it.
+        # Some clusters expect "Password+OTP" or "OTP" in a single prompt.
+        pass_otp = os.environ.get("LCS_PASS_OTP")
+        if not pass_otp:
+            pass_otp = getpass.getpass(
+                f"({target_user}@{target_host}) Password/OTP (same as manual ssh): "
+            )
+        askpass_path = None
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+                askpass_path = f.name
+                f.write("#!/bin/bash\n")
+                f.write(f"echo \"{pass_otp}\"\n")
+            os.chmod(askpass_path, 0o700)
+
+            env = os.environ.copy()
+            env["SSH_ASKPASS"] = askpass_path
+            env["SSH_ASKPASS_REQUIRE"] = "force"
+            env["DISPLAY"] = ":0"
+
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                preexec_fn=os.setsid,
+            )
+        except Exception:
+            if askpass_path and os.path.exists(askpass_path):
+                os.unlink(askpass_path)
+            raise
+        try:
+            time.sleep(2)
+            if proc.poll() is not None:
+                _, stderr = proc.communicate()
+                logging.error("❌ Tunnel died immediately!")
+                logging.error(f"Reason: {stderr.decode() if stderr else 'Unknown'}")
+                logging.info(f"Debug Command: {' '.join(cmd)}")
+                raise RuntimeError("SSH tunnel failed to start")
             yield
+        finally:
+            logging.info("🛑 Closing tunnel...")
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            if askpass_path and os.path.exists(askpass_path):
+                os.unlink(askpass_path)
 
 # --- Business Logic ---
 
