@@ -561,22 +561,24 @@ def update_vscode_ssh_config(user: str, port: int):
 
 def create_connection(args, user: str, host: str) -> SSHExecutor:
     """
-    Smart factory that automatically chooses the connection strategy:
-    1. If Router config is available (Env or CLI) -> RouterSocketExecutor (passwordless)
-    2. Otherwise -> DirectFabricExecutor (original mode with password/OTP)
+    Smart factory that chooses the connection strategy explicitly:
+    1. If router CLI args are provided -> RouterSocketExecutor
+    2. Otherwise -> DirectFabricExecutor
+
+    IMPORTANT:
+    - Environment variables should NOT silently switch the connection mode.
+    - Router mode must be enabled explicitly via CLI args (or, in the Web UI,
+      by rendering those CLI args into the planned command).
     """
-    # 1. Try to build Router Config
-    env_config = RouterConfig.from_env()
-    router_addr = args.router or (env_config.address if env_config else None)
-    hpc_real = args.hpc_real_host or (env_config.hpc_host if env_config else None)
+    router_addr = args.router
+    hpc_real = args.hpc_real_host
 
     if router_addr and hpc_real:
-        # Use Router Jump Mode
         config = RouterConfig(
             address=router_addr,
-            socket_path=args.router_socket or (env_config.socket_path if env_config else "/tmp/hpc_socket"),
+            socket_path=args.router_socket or "/tmp/hpc_socket",
             hpc_host=hpc_real,
-            hpc_port=args.hpc_real_port or (env_config.hpc_port if env_config else "22")
+            hpc_port=args.hpc_real_port or "22"
         )
         return RouterSocketExecutor(config)
     
@@ -638,14 +640,16 @@ def main():
     parser.add_argument("--proxy-local-port", type=int, default=9999, help="Local port on compute nodes that exposes the HTTP proxy.")
     
     # Router Config Args (Optional - enables Router Jump mode)
-    parser.add_argument("--router", type=str, default=os.environ.get("LCS_ROUTER"), 
-                        help="Router SSH address (enables Router Jump mode, or set LCS_ROUTER env var)")
-    parser.add_argument("--router-socket", type=str, default=os.environ.get("LCS_SOCKET", "/tmp/hpc_socket"), 
-                        help="Path to the SSH socket on the router (or set LCS_SOCKET env var)")
-    parser.add_argument("--hpc-real-host", type=str, default=os.environ.get("LCS_HPC_HOST"), 
-                        help="Real HPC user@ip (enables Router Jump mode, or set LCS_HPC_HOST env var)")
-    parser.add_argument("--hpc-real-port", type=str, default=os.environ.get("LCS_HPC_PORT", "22"), 
-                        help="Real HPC SSH port (or set LCS_HPC_PORT env var)")
+    # IMPORTANT: these default to None on purpose.
+    # Environment variables must not silently enable router mode.
+    parser.add_argument("--router", type=str, default=None,
+                        help="Router SSH address (explicitly enables Router Jump mode)")
+    parser.add_argument("--router-socket", type=str, default=None,
+                        help="Path to the SSH socket on the router")
+    parser.add_argument("--hpc-real-host", type=str, default=None,
+                        help="Real HPC user@ip (explicitly enables Router Jump mode)")
+    parser.add_argument("--hpc-real-port", type=str, default=None,
+                        help="Real HPC SSH port")
     
     # Legacy jump host support (for Direct mode)
     parser.add_argument("--jump-host", type=str, help="Jump server address (for Direct mode)")

@@ -14,6 +14,8 @@ from ui.storage import (
     add_run,
     build_profile_from_form,
     default_profile,
+    effective_profile,
+    env_detection,
     get_profile,
     list_profiles,
     list_runs,
@@ -75,13 +77,16 @@ def profiles(request: Request) -> HTMLResponse:
 
 @app.get("/profiles/new", response_class=HTMLResponse)
 def profile_new(request: Request) -> HTMLResponse:
+    profile = default_profile()
     return templates.TemplateResponse(
         "profile_form.jinja2",
         {
             "request": request,
             "title": "New profile",
             "active": "profiles",
-            "profile": default_profile(),
+            "profile": profile,
+            "effective": effective_profile(profile),
+            "env_detected": env_detection(),
             "action": "/profiles",
         },
     )
@@ -105,6 +110,8 @@ def profile_edit(request: Request, profile_id: str) -> HTMLResponse:
             "title": "Edit profile",
             "active": "profiles",
             "profile": profile,
+            "effective": effective_profile(profile),
+            "env_detected": env_detection(),
             "action": f"/profiles/{profile_id}",
         },
     )
@@ -201,13 +208,14 @@ async def diagnostics_run(request: Request) -> HTMLResponse:
 def launch(request: Request, task_id: Optional[str] = None) -> HTMLResponse:
     profiles = _prepare_profiles()
     profile = profiles[0] if profiles else default_profile()
+    effective = effective_profile(profile)
     tasks = list_tasks(10)
     selected_task = None
     if task_id:
         selected_task = refresh_task(task_id)
     if not selected_task:
         selected_task = tasks[0] if tasks else None
-    planned_command = render_command(build_launch_command(profile)) if profile else "launch_server"
+    planned_command = render_command(build_launch_command(effective)) if effective else "launch_server"
     return templates.TemplateResponse(
         "launch.jinja2",
         {
@@ -216,6 +224,8 @@ def launch(request: Request, task_id: Optional[str] = None) -> HTMLResponse:
             "active": "launch",
             "profiles": profiles,
             "profile": profile,
+            "effective": effective,
+            "env_detected": env_detection(),
             "task": selected_task,
             "tasks": tasks,
             "planned_command": planned_command,

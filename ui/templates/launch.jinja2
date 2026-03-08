@@ -24,9 +24,48 @@
     </form>
 
     <section class="summary">
+      <h2>Environment detected</h2>
+      {% if env_detected %}
+        <table class="table">
+          <thead>
+            <tr><th>Env var</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            {% for key, value in env_detected.items() %}
+              <tr><td><code>{{ key }}</code></td><td><code>{{ value }}</code></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="muted">Environment variables can provide fallback values, but they do not override the selected <code>mode</code>.</p>
+      {% else %}
+        <p class="muted">No launch-related environment variables detected.</p>
+      {% endif %}
+    </section>
+
+    <section class="summary">
+      <h2>Effective config</h2>
+      <table class="table">
+        <thead>
+          <tr><th>Field</th><th>Effective value</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>mode</td><td><code>{{ effective.mode }}</code></td><td><code>{{ effective._sources.mode }}</code></td></tr>
+          <tr><td>destination</td><td><code>{{ effective.destination }}</code></td><td><code>{{ effective._sources.destination }}</code></td></tr>
+          <tr><td>ssh_port</td><td><code>{{ effective.ssh_port }}</code></td><td><code>{{ effective._sources.ssh_port }}</code></td></tr>
+          <tr><td>router_address</td><td><code>{{ effective.router_address }}</code></td><td><code>{{ effective._sources.router_address }}</code></td></tr>
+          <tr><td>router_socket_path</td><td><code>{{ effective.router_socket_path }}</code></td><td><code>{{ effective._sources.router_socket_path }}</code></td></tr>
+          <tr><td>hpc_real_host</td><td><code>{{ effective.hpc_real_host }}</code></td><td><code>{{ effective._sources.hpc_real_host }}</code></td></tr>
+          <tr><td>hpc_real_port</td><td><code>{{ effective.hpc_real_port }}</code></td><td><code>{{ effective._sources.hpc_real_port }}</code></td></tr>
+          <tr><td>partition</td><td><code>{{ effective.partition }}</code></td><td><code>{{ effective._sources.partition }}</code></td></tr>
+          <tr><td>env_name</td><td><code>{{ effective.env_name }}</code></td><td><code>{{ effective._sources.env_name }}</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="summary">
       <h2>Planned command</h2>
       <pre>{{ planned_command }}</pre>
-      <p class="muted">Check this command before queueing if you suspect profile-to-CLI mapping issues.</p>
+      <p class="muted">This command is rendered from the effective config above.</p>
     </section>
 
     <section class="summary">

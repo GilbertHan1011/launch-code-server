@@ -8,8 +8,47 @@
     </div>
   </section>
 
+  <section class="summary">
+    <h2>Environment detected</h2>
+    {% if env_detected %}
+      <table class="table">
+        <thead>
+          <tr><th>Env var</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          {% for key, value in env_detected.items() %}
+            <tr><td><code>{{ key }}</code></td><td><code>{{ value }}</code></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted">Environment variables are shown as detected values only. They do not change <code>mode</code> automatically.</p>
+    {% else %}
+      <p class="muted">No launch-related environment variables detected.</p>
+    {% endif %}
+  </section>
+
+  <section class="summary">
+    <h2>Effective config preview</h2>
+    <table class="table">
+      <thead>
+        <tr><th>Field</th><th>Effective value</th><th>Source</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>mode</td><td><code>{{ effective.mode }}</code></td><td><code>{{ effective._sources.mode }}</code></td></tr>
+        <tr><td>router_address</td><td><code>{{ effective.router_address }}</code></td><td><code>{{ effective._sources.router_address }}</code></td></tr>
+        <tr><td>router_socket_path</td><td><code>{{ effective.router_socket_path }}</code></td><td><code>{{ effective._sources.router_socket_path }}</code></td></tr>
+        <tr><td>hpc_real_host</td><td><code>{{ effective.hpc_real_host }}</code></td><td><code>{{ effective._sources.hpc_real_host }}</code></td></tr>
+        <tr><td>hpc_real_port</td><td><code>{{ effective.hpc_real_port }}</code></td><td><code>{{ effective._sources.hpc_real_port }}</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
   <form class="form" method="post" action="{{ action }}">
     <div class="grid">
+      <label>
+        Name
+        <input type="text" name="name" value="{{ profile.name }}" placeholder="profile name" />
+      </label>
       <label>
         Mode
         <select name="mode">
@@ -44,6 +83,10 @@
       <label>
         Partition
         <input type="text" name="partition" value="{{ profile.partition }}" />
+      </label>
+      <label>
+        Compute node
+        <input type="text" name="compute_node" value="{{ profile.compute_node }}" />
       </label>
       <label>
         Num CPUs

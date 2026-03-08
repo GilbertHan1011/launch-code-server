@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -42,6 +43,13 @@ INT_FIELDS = {
     "proxy_target_port",
     "proxy_local_port",
     "local_forward_port",
+}
+
+ENV_KEYS = {
+    "router_address": "LCS_ROUTER",
+    "router_socket_path": "LCS_SOCKET",
+    "hpc_real_host": "LCS_HPC_HOST",
+    "hpc_real_port": "LCS_HPC_PORT",
 }
 
 
@@ -119,6 +127,44 @@ def default_profile() -> Dict[str, Any]:
         profile[field["name"]] = field["default"]
     profile["name"] = ""
     return profile
+
+
+def env_detection() -> Dict[str, str]:
+    detected: Dict[str, str] = {}
+    for _, env_key in ENV_KEYS.items():
+        value = os.environ.get(env_key)
+        if value not in (None, ""):
+            detected[env_key] = value
+    return detected
+
+
+def effective_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
+    effective = dict(profile)
+    sources: Dict[str, str] = {}
+    for field in PROFILE_FIELDS:
+        name = field["name"]
+        current = effective.get(name)
+        env_key = ENV_KEYS.get(name)
+        env_value = os.environ.get(env_key) if env_key else None
+        default_value = field["default"]
+
+        if name == "mode":
+            sources[name] = "profile"
+            effective[name] = current or default_value
+            continue
+
+        if current not in (None, "", False):
+            sources[name] = "profile"
+        elif env_value not in (None, ""):
+            effective[name] = int(env_value) if name in INT_FIELDS else env_value
+            sources[name] = f"env:{env_key}"
+        else:
+            effective[name] = default_value
+            sources[name] = "default"
+
+    effective["_sources"] = sources
+    effective["_env"] = env_detection()
+    return effective
 
 
 def list_runs(limit: int = 20) -> List[Dict[str, Any]]:
