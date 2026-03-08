@@ -23,7 +23,7 @@ from ui.storage import (
     save_profile,
     delete_profile,
 )
-from ui.tasks import create_launch_task, launch_background, list_tasks, refresh_task, stop_task, load_task
+from ui.tasks import create_launch_task, launch_background, list_tasks, refresh_task, stop_task, load_task, submit_task_input
 from ui.launcher import build_launch_command, render_command
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -267,6 +267,21 @@ def launch_status(request: Request, task_id: str) -> HTMLResponse:
 @app.post("/launch/stop/{task_id}", response_class=HTMLResponse)
 def launch_stop(request: Request, task_id: str) -> HTMLResponse:
     task = stop_task(task_id)
+    task = refresh_task(task_id) if task else None
+    return templates.TemplateResponse(
+        "launch_status.jinja2",
+        {
+            "request": request,
+            "task": task,
+        },
+    )
+
+
+@app.post("/launch/input/{task_id}", response_class=HTMLResponse)
+async def launch_input(request: Request, task_id: str) -> HTMLResponse:
+    form = dict(await request.form())
+    text = (form.get("task_input") or "")
+    task = submit_task_input(task_id, text)
     task = refresh_task(task_id) if task else None
     return templates.TemplateResponse(
         "launch_status.jinja2",

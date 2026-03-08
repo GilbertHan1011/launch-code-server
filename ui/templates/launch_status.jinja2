@@ -20,12 +20,28 @@
 
       {% if task.status in ['queued', 'running', 'pending'] %}
         <form method="post"
+              action="/launch/input/{{ task.id }}"
+              hx-post="/launch/input/{{ task.id }}"
+              hx-target="#task-status"
+              hx-swap="outerHTML"
+              class="form-inline">
+          <label>
+            OTP / input
+            <input type="text" name="task_input" placeholder="Enter OTP or interactive input" />
+          </label>
+          <button class="btn primary" type="submit">Send input</button>
+        </form>
+
+        <form method="post"
               action="/launch/stop/{{ task.id }}"
               hx-post="/launch/stop/{{ task.id }}"
               hx-target="#task-status"
               hx-swap="outerHTML">
           <button class="btn danger" type="submit">Stop task</button>
         </form>
+        {% if task.input_count %}
+          <p><strong>Inputs submitted:</strong> {{ task.input_count }}</p>
+        {% endif %}
       {% elif task.status == 'stopped' %}
         <p><strong>Stopped at:</strong> {{ task.stopped_at or 'n/a' }}</p>
         <p><strong>Stop info:</strong> {{ task.stop_info or 'manual stop requested' }}</p>

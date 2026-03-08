@@ -33,6 +33,10 @@ def _task_log(task_id: str) -> Path:
     return TASKS_DIR / f"{task_id}.log"
 
 
+def _task_input(task_id: str) -> Path:
+    return TASKS_DIR / f"{task_id}.input"
+
+
 def _extract_summary(content: str) -> Dict[str, Any]:
     summary: Dict[str, Any] = {}
 
@@ -65,6 +69,8 @@ def create_launch_task(profile: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_tasks_dir()
     task_id = f"launch-{uuid.uuid4().hex[:12]}"
     command = build_launch_command(profile)
+    input_path = _task_input(task_id)
+    input_path.write_text("", encoding="utf-8")
     task = {
         "id": task_id,
         "kind": "launch",
@@ -76,6 +82,7 @@ def create_launch_task(profile: Dict[str, Any]) -> Dict[str, Any]:
         "command": render_command(command),
         "argv": command,
         "log_path": str(_task_log(task_id)),
+        "input_path": str(input_path),
         "pid": None,
         "return_code": None,
         "duration_ms": None,
@@ -84,6 +91,7 @@ def create_launch_task(profile: Dict[str, Any]) -> Dict[str, Any]:
         "error": "",
         "summary_data": {},
         "scancel": None,
+        "input_count": 0,
     }
     _task_file(task_id).write_text(json.dumps(task, indent=2, ensure_ascii=False), encoding="utf-8")
     return task
@@ -119,13 +127,15 @@ def launch_background(task_id: str, cwd: Optional[str] = None) -> Dict[str, Any]
         raise FileNotFoundError(task_id)
 
     log_path = Path(task["log_path"])
+    input_path = Path(task["input_path"])
     log_path.parent.mkdir(parents=True, exist_ok=True)
     script = TASKS_DIR / f"{task_id}.runner.py"
     script.write_text(
         (
-            "import json, subprocess, time, pathlib, os\n"
+            "import json, subprocess, time, pathlib, os, threading\n"
             f"task_path = pathlib.Path({str(_task_file(task_id))!r})\n"
             f"log_path = pathlib.Path({str(log_path)!r})\n"
+            f"input_path = pathlib.Path({str(input_path)!r})\n"
             f"argv = {task['argv']!r}\n"
             f"cwd = {str(cwd or os.getcwd())!r}\n"
             "task = json.loads(task_path.read_text(encoding='utf-8'))\n"
@@ -137,10 +147,34 @@ def launch_background(task_id: str, cwd: Optional[str] = None) -> Dict[str, Any]
             "with log_path.open('w', encoding='utf-8') as logf:\n"
             "    logf.write('$ ' + ' '.join(argv) + '\\n\\n')\n"
             "    logf.flush()\n"
-            "    proc = subprocess.Popen(argv, cwd=cwd, stdout=logf, stderr=subprocess.STDOUT, text=True)\n"
+            "    proc = subprocess.Popen(argv, cwd=cwd, stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True)\n"
             "    task = json.loads(task_path.read_text(encoding='utf-8'))\n"
             "    task['child_pid'] = proc.pid\n"
             "    task_path.write_text(json.dumps(task, indent=2, ensure_ascii=False), encoding='utf-8')\n"
+            "    seen = 0\n"
+            "    def feeder():\n"
+            "        nonlocal seen\n"
+            "        while proc.poll() is None:\n"
+            "            try:\n"
+            "                if input_path.exists():\n"
+            "                    content = input_path.read_text(encoding='utf-8')\n"
+            "                    if len(content) > seen:\n"
+            "                        chunk = content[seen:]\n"
+            "                        seen = len(content)\n"
+            "                        if proc.stdin:\n"
+            "                            proc.stdin.write(chunk)\n"
+            "                            proc.stdin.flush()\n"
+            "                        logf.write('\\n[ui-input-submitted]\\n')\n"
+            "                        logf.flush()\n"
+            "            except Exception as exc:\n"
+            "                try:\n"
+            "                    logf.write('\\n[input-error] ' + str(exc) + '\\n')\n"
+            "                    logf.flush()\n"
+            "                except Exception:\n"
+            "                    pass\n"
+            "            time.sleep(0.5)\n"
+            "    t = threading.Thread(target=feeder, daemon=True)\n"
+            "    t.start()\n"
             "    rc = proc.wait()\n"
             "duration_ms = int((time.perf_counter() - started) * 1000)\n"
             "task = json.loads(task_path.read_text(encoding='utf-8'))\n"
@@ -167,6 +201,23 @@ def launch_background(task_id: str, cwd: Optional[str] = None) -> Dict[str, Any]
     )
     task["pid"] = proc.pid
     task["status"] = "queued"
+    save_task(task)
+    return task
+
+
+def submit_task_input(task_id: str, text: str) -> Optional[Dict[str, Any]]:
+    task = load_task(task_id)
+    if not task:
+        return None
+    input_path = Path(task.get("input_path") or "")
+    if not input_path:
+        return task
+    input_path.parent.mkdir(parents=True, exist_ok=True)
+    with input_path.open("a", encoding="utf-8") as f:
+        f.write(text)
+        if not text.endswith("\n"):
+            f.write("\n")
+    task["input_count"] = int(task.get("input_count") or 0) + 1
     save_task(task)
     return task
 
