@@ -19,7 +19,19 @@
       <p><a href="/launch/log/{{ task.id }}" target="_blank">View full log</a></p>
 
       {% if task.status in ['queued', 'running', 'pending'] %}
-        <form method="post"
+        {% if task.awaiting_input %}
+          <div class="notice">
+            <strong>Interactive input requested.</strong> The running task appears to be waiting for OTP/password input. Enter it below and click <em>Send input</em>.
+          </div>
+        {% else %}
+          <div class="notice">
+            Task is running, but no interactive prompt has been detected yet. If you type into the box below too early, it may be ignored until the remote process actually asks for input.
+          </div>
+        {% endif %}
+
+        <form id="task-input-form-{{ task.id }}"
+              hx-preserve
+              method="post"
               action="/launch/input/{{ task.id }}"
               hx-post="/launch/input/{{ task.id }}"
               hx-target="#task-status"
@@ -27,7 +39,12 @@
               class="form-inline">
           <label>
             OTP / input
-            <input type="text" name="task_input" placeholder="Enter OTP or interactive input" />
+            <input id="task-input-{{ task.id }}"
+                   hx-preserve
+                   type="text"
+                   name="task_input"
+                   placeholder="Enter OTP or interactive input"
+                   autocomplete="one-time-code" />
           </label>
           <button class="btn primary" type="submit">Send input</button>
         </form>

@@ -294,6 +294,13 @@ def refresh_task(task_id: str) -> Optional[Dict[str, Any]]:
             content = log_path.read_text(encoding="utf-8")
             task["stdout_tail"] = content[-8000:]
             task["summary_data"] = _extract_summary(content)
+            lower = content.lower()
+            task["awaiting_input"] = (
+                "password/otp:" in lower
+                or "password:" in lower
+                or "otp:" in lower
+                or "keyboard-interactive" in lower
+            )
         except Exception:
             pass
     save_task(task)
