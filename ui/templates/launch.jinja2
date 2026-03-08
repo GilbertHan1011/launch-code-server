@@ -9,6 +9,22 @@
   </section>
 
   {% if profiles %}
+    <section class="summary">
+      <h2>Authentication workflow (Scheme A)</h2>
+      <p class="muted">The Web UI does not handle OTP/password prompts directly. For profiles that require interactive authentication, authenticate in terminal first, then return to the UI.</p>
+      <ol>
+        <li>Complete manual SSH / OTP authentication in terminal.</li>
+        <li>If using <code>router_socket</code>, make sure the control socket already exists.</li>
+        <li>Run Diagnostics again.</li>
+        <li>Only then queue <code>launch_server</code>.</li>
+      </ol>
+      {% if profile.mode == 'router_socket' %}
+        <p><strong>Current mode:</strong> <code>router_socket</code> — this works best when your router/control socket is already established outside the UI.</p>
+      {% else %}
+        <p><strong>Current mode:</strong> <code>direct</code> — if diagnostics show interactive auth failures, either pre-authenticate in terminal first or switch to <code>router_socket</code>.</p>
+      {% endif %}
+    </section>
+
     <form class="form-inline" method="post" action="/launch">
       <label>
         Profile
@@ -22,6 +38,26 @@
       </label>
       <button class="btn primary" type="submit">Queue launch</button>
     </form>
+
+    <section class="summary">
+      <h2>Router socket preflight</h2>
+      {% if effective.mode == 'router_socket' %}
+        <table class="table">
+          <thead>
+            <tr><th>Check</th><th>Value</th><th>Interpretation</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>router_address</td><td><code>{{ effective.router_address or '' }}</code></td><td>{% if effective.router_address %}configured{% else %}missing{% endif %}</td></tr>
+            <tr><td>router_socket_path</td><td><code>{{ effective.router_socket_path or '' }}</code></td><td>{% if effective.router_socket_path %}configured{% else %}missing{% endif %}</td></tr>
+            <tr><td>hpc_real_host</td><td><code>{{ effective.hpc_real_host or '' }}</code></td><td>{% if effective.hpc_real_host %}configured{% else %}missing{% endif %}</td></tr>
+            <tr><td>hpc_real_port</td><td><code>{{ effective.hpc_real_port or '' }}</code></td><td>{% if effective.hpc_real_port %}configured{% else %}missing{% endif %}</td></tr>
+          </tbody>
+        </table>
+        <p class="muted">Preflight only checks whether router-socket fields are configured. Use Diagnostics to verify router reachability and socket existence after manual authentication.</p>
+      {% else %}
+        <p class="muted">Current mode is <code>{{ effective.mode }}</code>. Router socket preflight only applies to <code>router_socket</code> mode.</p>
+      {% endif %}
+    </section>
 
     <section class="summary">
       <h2>Environment detected</h2>

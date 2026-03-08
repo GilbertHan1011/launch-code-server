@@ -54,6 +54,7 @@ def _format_result(
     details: str,
     command: str,
     duration_ms: int,
+    hint: str = "",
 ) -> Dict[str, Any]:
     return {
         "name": name,
@@ -62,7 +63,21 @@ def _format_result(
         "details": details,
         "command": command,
         "duration_ms": duration_ms,
+        "hint": hint,
     }
+
+
+def _needs_interactive_auth(stderr: str) -> bool:
+    text = (stderr or "").lower()
+    return "permission denied" in text or "keyboard-interactive" in text or "password" in text
+
+
+def _auth_hint(stderr: str, mode: str) -> str:
+    if _needs_interactive_auth(stderr):
+        if mode == "router_socket":
+            return "This path likely requires external pre-authentication. Under Scheme A, authenticate in terminal first and ensure the router/control socket already exists before retrying."
+        return "This path likely requires interactive authentication (OTP/password). Diagnostics use non-interactive SSH, so try Scheme A: authenticate in terminal first or switch to router_socket with a pre-established socket."
+    return ""
 
 
 def check_local_environment(profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -100,6 +115,7 @@ def check_router_reachable(profile: Dict[str, Any]) -> Dict[str, Any]:
             "mode is not router_socket",
             "ssh <router> exit",
             0,
+            hint="Switch mode to router_socket if you intend to use Scheme A with a pre-established router/control socket.",
         )
     router = profile.get("router_address") or ""
     if not router:
@@ -123,6 +139,7 @@ def check_router_reachable(profile: Dict[str, Any]) -> Dict[str, Any]:
         details,
         " ".join(cmd),
         duration_ms,
+        hint=_auth_hint(details, "router_socket"),
     )
 
 
@@ -135,6 +152,7 @@ def check_router_socket(profile: Dict[str, Any]) -> Dict[str, Any]:
             "mode is not router_socket",
             "ssh <router> 'test -S <socket>'",
             0,
+            hint="Router socket checks matter only for Scheme A / router_socket mode.",
         )
     router = profile.get("router_address") or ""
     socket_path = profile.get("router_socket_path") or ""
@@ -153,6 +171,7 @@ def check_router_socket(profile: Dict[str, Any]) -> Dict[str, Any]:
     status = "ok" if code == 0 else "fail"
     summary = "router socket present" if code == 0 else "router socket missing"
     details = out or err or "no output"
+    hint = "If you use Scheme A, create/authenticate the control socket in terminal first, then retry diagnostics." if code != 0 else ""
     return _format_result(
         "Router socket",
         status,
@@ -160,6 +179,7 @@ def check_router_socket(profile: Dict[str, Any]) -> Dict[str, Any]:
         details,
         " ".join(cmd),
         duration_ms,
+        hint=hint,
     )
 
 
@@ -180,8 +200,13 @@ def check_hpc_ssh(profile: Dict[str, Any]) -> Dict[str, Any]:
         cmd = _ssh_command(destination, "exit 0", port=port)
         code, out, err, duration_ms = _run_command(cmd)
         status = "ok" if code == 0 else "fail"
-        summary = "direct SSH reachable" if code == 0 else "direct SSH failed"
         details = out or err or "no output"
+        if code == 0:
+            summary = "direct SSH reachable"
+        elif _needs_interactive_auth(details):
+            summary = "direct SSH requires interactive authentication"
+        else:
+            summary = "direct SSH failed"
         return _format_result(
             "HPC SSH",
             status,
@@ -189,6 +214,7 @@ def check_hpc_ssh(profile: Dict[str, Any]) -> Dict[str, Any]:
             details,
             " ".join(cmd),
             duration_ms,
+            hint=_auth_hint(details, "direct"),
         )
     if mode == "router_socket":
         router = profile.get("router_address") or ""
@@ -201,16 +227,20 @@ def check_hpc_ssh(profile: Dict[str, Any]) -> Dict[str, Any]:
                 "warn",
                 "router config incomplete",
                 "router_address, router_socket_path, or hpc_real_host missing",
-                "ssh <router> "
-                "\"ssh -S <socket> -p <port> <hpc_host> exit\"",
+                "ssh <router> \"ssh -S <socket> -p <port> <hpc_host> exit\"",
                 0,
             )
         nested = _router_nested_command(router, socket_path, hpc_host, int(hpc_port), "exit 0")
         cmd = _ssh_command(router, nested)
         code, out, err, duration_ms = _run_command(cmd)
         status = "ok" if code == 0 else "fail"
-        summary = "router SSH reachable" if code == 0 else "router SSH failed"
         details = out or err or "no output"
+        if code == 0:
+            summary = "router SSH reachable"
+        elif _needs_interactive_auth(details):
+            summary = "router SSH requires external pre-authentication"
+        else:
+            summary = "router SSH failed"
         return _format_result(
             "HPC SSH",
             status,
@@ -218,6 +248,7 @@ def check_hpc_ssh(profile: Dict[str, Any]) -> Dict[str, Any]:
             details,
             " ".join(cmd),
             duration_ms,
+            hint=_auth_hint(details, "router_socket"),
         )
     return _format_result(
         "HPC SSH",
@@ -247,8 +278,13 @@ def check_slurm_access(profile: Dict[str, Any]) -> Dict[str, Any]:
         cmd = _ssh_command(destination, remote_cmd, port=port)
         code, out, err, duration_ms = _run_command(cmd)
         status = "ok" if code == 0 else "fail"
-        summary = "sbatch available" if code == 0 else "sbatch not available"
         details = out or err or "no output"
+        if code == 0:
+            summary = "sbatch available"
+        elif _needs_interactive_auth(details):
+            summary = "could not verify sbatch because remote authentication failed"
+        else:
+            summary = "sbatch not available"
         return _format_result(
             "Slurm access",
             status,
@@ -256,6 +292,7 @@ def check_slurm_access(profile: Dict[str, Any]) -> Dict[str, Any]:
             details,
             " ".join(cmd),
             duration_ms,
+            hint=_auth_hint(details, "direct"),
         )
     if mode == "router_socket":
         router = profile.get("router_address") or ""
@@ -268,16 +305,20 @@ def check_slurm_access(profile: Dict[str, Any]) -> Dict[str, Any]:
                 "warn",
                 "router config incomplete",
                 "router_address, router_socket_path, or hpc_real_host missing",
-                "ssh <router> "
-                "\"ssh -S <socket> -p <port> <hpc_host> 'command -v sbatch && sbatch --version'\"",
+                "ssh <router> \"ssh -S <socket> -p <port> <hpc_host> 'command -v sbatch && sbatch --version'\"",
                 0,
             )
         nested = _router_nested_command(router, socket_path, hpc_host, int(hpc_port), remote_cmd)
         cmd = _ssh_command(router, nested)
         code, out, err, duration_ms = _run_command(cmd)
         status = "ok" if code == 0 else "fail"
-        summary = "sbatch available" if code == 0 else "sbatch not available"
         details = out or err or "no output"
+        if code == 0:
+            summary = "sbatch available"
+        elif _needs_interactive_auth(details):
+            summary = "could not verify sbatch because remote authentication failed"
+        else:
+            summary = "sbatch not available"
         return _format_result(
             "Slurm access",
             status,
@@ -285,6 +326,7 @@ def check_slurm_access(profile: Dict[str, Any]) -> Dict[str, Any]:
             details,
             " ".join(cmd),
             duration_ms,
+            hint=_auth_hint(details, "router_socket"),
         )
     return _format_result(
         "Slurm access",

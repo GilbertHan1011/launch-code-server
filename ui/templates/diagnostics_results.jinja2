@@ -8,6 +8,11 @@
         </div>
         <p class="summary">{{ result.summary }}</p>
         <pre class="details">{{ result.details }}</pre>
+        {% if result.hint %}
+          <div class="notice">
+            <strong>Hint:</strong> {{ result.hint }}
+          </div>
+        {% endif %}
         <div class="meta">
           <span class="command">{{ result.command }}</span>
           <span class="duration">{{ result.duration_ms }} ms</span>
