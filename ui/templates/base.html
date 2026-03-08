@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or 'launch_server Web UI' }}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">launch_server Web UI</div>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/diagnostics">Diagnostics</a>
+      <a href="/launch">Launch</a>
+      <a href="/runs">Runs</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

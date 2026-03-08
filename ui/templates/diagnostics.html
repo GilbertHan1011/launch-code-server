@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Diagnostics</h1>
+<section class="card">
+  <form method="post" action="/diagnostics/run" class="inline-form">
+    <label>
+      <span>Profile</span>
+      <select name="profile_id">
+        {% for item in profiles %}
+          <option value="{{ item.id }}" {% if profile.id == item.id %}selected{% endif %}>{{ item.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="button" type="submit">Run all diagnostics</button>
+  </form>
+</section>
+{% if results %}
+<div class="grid">
+  {% for result in results %}
+  <section class="card">
+    <h2>{{ result.name }}</h2>
+    <p><strong>Status:</strong> <span class="status {{ result.status }}">{{ result.status }}</span></p>
+    <p><strong>Summary:</strong> {{ result.summary }}</p>
+    <p><strong>Command:</strong><br><code>{{ result.command }}</code></p>
+    <p><strong>Details:</strong><br><pre>{{ result.details }}</pre></p>
+    <p><strong>Duration:</strong> {{ result.duration_ms }} ms</p>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<section class="card"><p>No diagnostics run yet.</p></section>
+{% endif %}
+{% endblock %}

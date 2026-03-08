@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1>Profiles</h1>
+  <a class="button" href="/profiles/new">New Profile</a>
+</div>
+<section class="card">
+  {% if profiles %}
+  <table>
+    <thead><tr><th>Name</th><th>Mode</th><th>Destination</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for profile in profiles %}
+      <tr>
+        <td>{{ profile.name }}</td>
+        <td>{{ profile.mode }}</td>
+        <td>{{ profile.destination }}</td>
+        <td><a href="/profiles/{{ profile.id }}">Edit</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No profiles yet. Create one to start diagnostics.</p>
+  {% endif %}
+</section>
+{% endblock %}

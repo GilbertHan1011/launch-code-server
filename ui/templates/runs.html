@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Runs</h1>
+<section class="card">
+  {% if runs %}
+  <table>
+    <thead><tr><th>Kind</th><th>Profile</th><th>Time</th><th>Summary</th></tr></thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run.kind }}</td>
+        <td>{{ run.profile_name or run.profile_id }}</td>
+        <td>{{ run.created_at }}</td>
+        <td>{{ run.summary }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No runs yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

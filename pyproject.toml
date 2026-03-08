@@ -7,12 +7,23 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.6"
-dependencies = []
+dependencies = [
+    "fastapi>=0.110,<1",
+    "uvicorn>=0.29,<1",
+    "jinja2>=3.1,<4",
+    "python-multipart>=0.0.9,<1",
+]
 
 [project.optional-dependencies]
 client = [
     "fabric >=3.2.2",
     "sshconf >=0.2.5",
+]
+ui = [
+    "fastapi >=0.110.0",
+    "jinja2 >=3.1.2",
+    "python-multipart >=0.0.9",
+    "uvicorn >=0.27.0",
 ]
 
 [project.scripts]

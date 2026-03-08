@@ -1,0 +1,62 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1>Diagnostics</h1>
+      <p class="muted">Run connectivity checks and review recent runs.</p>
+    </div>
+  </section>
+
+  {% if profiles %}
+    <form class="form-inline" method="post" action="/diagnostics/run" hx-post="/diagnostics/run" hx-target="#diagnostics-results" hx-indicator="#diagnostics-loading">
+      <label>
+        Profile
+        <select name="profile_id">
+          {% for profile in profiles %}
+            <option value="{{ profile.id }}" {% if active_profile and active_profile.id == profile.id %}selected{% endif %}>
+              {{ profile.name }} ({{ profile.destination or profile.hpc_real_host or 'unset' }})
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn primary" type="submit">Run all diagnostics</button>
+      <span id="diagnostics-loading" class="htmx-indicator">Running...</span>
+    </form>
+  {% else %}
+    <div class="empty">
+      <p>Create a profile before running diagnostics.</p>
+      <a class="btn primary" href="/profiles/new">New profile</a>
+    </div>
+  {% endif %}
+
+  <section id="diagnostics-results">
+    {% include "diagnostics_results.jinja2" %}
+  </section>
+
+  <section class="history">
+    <h2>Recent runs</h2>
+    {% if runs %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Profile</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td>{{ run.timestamp }}</td>
+              <td>{{ run.profile_name }}</td>
+              <td>{{ run.summary }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No runs yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

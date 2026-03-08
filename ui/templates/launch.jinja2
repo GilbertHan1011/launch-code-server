@@ -1,0 +1,88 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1>Launch</h1>
+      <p class="muted">Background launch queue for <code>launch_server</code>.</p>
+    </div>
+  </section>
+
+  {% if profiles %}
+    <form class="form-inline" method="post" action="/launch">
+      <label>
+        Profile
+        <select name="profile_id">
+          {% for item in profiles %}
+            <option value="{{ item.id }}" {% if profile and profile.id == item.id %}selected{% endif %}>
+              {{ item.name }} ({{ item.destination or item.hpc_real_host or 'unset' }})
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn primary" type="submit">Queue launch</button>
+    </form>
+
+    <section class="summary">
+      <h2>Planned command</h2>
+      <pre>{{ planned_command }}</pre>
+      <p class="muted">Check this command before queueing if you suspect profile-to-CLI mapping issues.</p>
+    </section>
+
+    <section class="summary">
+      <h2>Profile summary</h2>
+      <table class="table">
+        <tbody>
+          <tr><th>Mode</th><td>{{ profile.mode }}</td></tr>
+          <tr><th>Destination</th><td>{{ profile.destination }}</td></tr>
+          <tr><th>SSH port</th><td>{{ profile.ssh_port }}</td></tr>
+          <tr><th>Router</th><td>{{ profile.router_address }}</td></tr>
+          <tr><th>HPC real host</th><td>{{ profile.hpc_real_host }}</td></tr>
+          <tr><th>Partition</th><td>{{ profile.partition }}</td></tr>
+          <tr><th>CPUs</th><td>{{ profile.num_cpus }}</td></tr>
+          <tr><th>Memory per CPU</th><td>{{ profile.memory_per_cpu }}</td></tr>
+          <tr><th>Timeout</th><td>{{ profile.timeout }}</td></tr>
+          <tr><th>Env</th><td>{{ profile.env_name }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+  {% else %}
+    <div class="empty">
+      <p>Create a profile before launching.</p>
+      <a class="btn primary" href="/profiles/new">New profile</a>
+    </div>
+  {% endif %}
+
+  <section class="summary">
+    <h2>Current task</h2>
+    {% include "launch_status.jinja2" %}
+  </section>
+
+  <section class="history">
+    <h2>Recent tasks</h2>
+    {% if tasks %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Profile</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in tasks %}
+            <tr>
+              <td><a href="/launch?task_id={{ item.id }}">{{ item.id }}</a></td>
+              <td>{{ item.profile_name }}</td>
+              <td>{{ item.status }}</td>
+              <td>{{ item.updated_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No launch tasks yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

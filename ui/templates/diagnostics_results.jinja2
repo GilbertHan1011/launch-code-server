@@ -1,0 +1,22 @@
+{% if results %}
+  <div class="cards">
+    {% for result in results %}
+      <div class="card status-{{ result.status }}">
+        <div class="card-header">
+          <h3>{{ result.name }}</h3>
+          <span class="status">{{ result.status }}</span>
+        </div>
+        <p class="summary">{{ result.summary }}</p>
+        <pre class="details">{{ result.details }}</pre>
+        <div class="meta">
+          <span class="command">{{ result.command }}</span>
+          <span class="duration">{{ result.duration_ms }} ms</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p>No diagnostics run yet.</p>
+  </div>
+{% endif %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title or "Launch Server UI" }}</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Launch Server UI</div>
+      <nav>
+        <a href="/profiles" class="nav-link{% if active == 'profiles' %} active{% endif %}">Profiles</a>
+        <a href="/diagnostics" class="nav-link{% if active == 'diagnostics' %} active{% endif %}">Diagnostics</a>
+        <a href="/launch" class="nav-link{% if active == 'launch' %} active{% endif %}">Launch</a>
+        <a href="/runs" class="nav-link{% if active == 'runs' %} active{% endif %}">Runs</a>
+      </nav>
+    </header>
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

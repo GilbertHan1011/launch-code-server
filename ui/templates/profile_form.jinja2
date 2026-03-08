@@ -1,0 +1,98 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1>{{ title }}</h1>
+      <p class="muted">Configure connection settings for launch_server.</p>
+    </div>
+  </section>
+
+  <form class="form" method="post" action="{{ action }}">
+    <div class="grid">
+      <label>
+        Mode
+        <select name="mode">
+          <option value="direct" {% if profile.mode == 'direct' %}selected{% endif %}>direct</option>
+          <option value="router_socket" {% if profile.mode == 'router_socket' %}selected{% endif %}>router_socket</option>
+        </select>
+      </label>
+      <label>
+        Destination
+        <input type="text" name="destination" value="{{ profile.destination }}" placeholder="user@hpc-host" />
+      </label>
+      <label>
+        SSH port
+        <input type="number" name="ssh_port" value="{{ profile.ssh_port }}" />
+      </label>
+      <label>
+        Router address
+        <input type="text" name="router_address" value="{{ profile.router_address }}" placeholder="user@router-host" />
+      </label>
+      <label>
+        Router socket path
+        <input type="text" name="router_socket_path" value="{{ profile.router_socket_path }}" />
+      </label>
+      <label>
+        HPC real host
+        <input type="text" name="hpc_real_host" value="{{ profile.hpc_real_host }}" placeholder="user@ip" />
+      </label>
+      <label>
+        HPC real port
+        <input type="number" name="hpc_real_port" value="{{ profile.hpc_real_port }}" />
+      </label>
+      <label>
+        Partition
+        <input type="text" name="partition" value="{{ profile.partition }}" />
+      </label>
+      <label>
+        Num CPUs
+        <input type="number" name="num_cpus" value="{{ profile.num_cpus }}" />
+      </label>
+      <label>
+        Memory per CPU
+        <input type="text" name="memory_per_cpu" value="{{ profile.memory_per_cpu }}" placeholder="8G" />
+      </label>
+      <label>
+        Timeout (seconds)
+        <input type="number" name="timeout" value="{{ profile.timeout }}" />
+      </label>
+      <label>
+        Env name
+        <input type="text" name="env_name" value="{{ profile.env_name }}" />
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="setup_proxy" {% if profile.setup_proxy %}checked{% endif %} />
+        Setup proxy
+      </label>
+      <label>
+        Proxy login host
+        <input type="text" name="proxy_login_host" value="{{ profile.proxy_login_host }}" />
+      </label>
+      <label>
+        Proxy target host
+        <input type="text" name="proxy_target_host" value="{{ profile.proxy_target_host }}" />
+      </label>
+      <label>
+        Proxy target port
+        <input type="number" name="proxy_target_port" value="{{ profile.proxy_target_port }}" />
+      </label>
+      <label>
+        Proxy local port
+        <input type="number" name="proxy_local_port" value="{{ profile.proxy_local_port }}" />
+      </label>
+      <label>
+        Local forward port
+        <input type="number" name="local_forward_port" value="{{ profile.local_forward_port }}" />
+      </label>
+      <label>
+        VS Code alias
+        <input type="text" name="vscode_alias" value="{{ profile.vscode_alias }}" />
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn primary" type="submit">Save</button>
+      <a class="btn" href="/profiles">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

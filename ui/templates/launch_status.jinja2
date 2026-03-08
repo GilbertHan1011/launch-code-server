@@ -1,0 +1,102 @@
+<div id="task-status"
+     {% if task and task.status in ['queued', 'running', 'pending'] %}
+     hx-get="/launch/status/{{ task.id }}"
+     hx-trigger="load, every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% if task %}
+    <div class="card status-{{ 'ok' if task.status == 'success' else 'fail' if task.status in ['failed', 'stopped'] else 'warn' }}">
+      <div class="card-header">
+        <h3>{{ task.id }}</h3>
+        <span>{{ task.status }}</span>
+      </div>
+      <p><strong>Profile:</strong> {{ task.profile_name }}</p>
+      <p><strong>Command:</strong></p>
+      <pre>{{ task.command }}</pre>
+      <p><strong>Return code:</strong> {{ task.return_code if task.return_code is not none else 'running' }}</p>
+      <p><strong>Duration:</strong> {{ task.duration_ms if task.duration_ms is not none else '...' }} ms</p>
+      <p><strong>Log path:</strong> <code>{{ task.log_path }}</code></p>
+      <p><a href="/launch/log/{{ task.id }}" target="_blank">View full log</a></p>
+
+      {% if task.status in ['queued', 'running', 'pending'] %}
+        <form method="post"
+              action="/launch/stop/{{ task.id }}"
+              hx-post="/launch/stop/{{ task.id }}"
+              hx-target="#task-status"
+              hx-swap="outerHTML">
+          <button class="btn danger" type="submit">Stop task</button>
+        </form>
+      {% elif task.status == 'stopped' %}
+        <p><strong>Stopped at:</strong> {{ task.stopped_at or 'n/a' }}</p>
+        <p><strong>Stop info:</strong> {{ task.stop_info or 'manual stop requested' }}</p>
+        {% if task.scancel %}
+          <p><strong>scancel:</strong>
+            {% if task.scancel.ok %}
+              success for job <code>{{ task.scancel.job_id }}</code>
+            {% else %}
+              failed for job <code>{{ task.scancel.job_id }}</code>
+            {% endif %}
+          </p>
+          {% if task.scancel.stderr %}
+            <pre>{{ task.scancel.stderr }}</pre>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+
+      {% if task.summary_data and task.summary_data.ready %}
+        <div class="summary">
+          <h4>Connection summary</h4>
+          <table class="table">
+            <tbody>
+              <tr><th>Job ID</th><td>{{ task.summary_data.job_id or 'n/a' }}</td></tr>
+              <tr><th>Node</th><td>{{ task.summary_data.node or 'n/a' }}</td></tr>
+              <tr><th>Server Port</th><td>{{ task.summary_data.server_port or 'n/a' }}</td></tr>
+              <tr><th>Local Forward Port</th><td>{{ task.summary_data.local_forward_port or 'n/a' }}</td></tr>
+              <tr><th>Forward Target</th><td>{{ task.summary_data.forward_host or 'n/a' }}:{{ task.summary_data.forward_port or 'n/a' }}</td></tr>
+              <tr><th>VS Code Alias</th><td>{{ task.summary_data.vscode_alias or 'vscode-server' }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card ready-card">
+          <div class="card-header">
+            <h4>Ready to connect</h4>
+            <span>guide</span>
+          </div>
+          <p>
+            {% if task.status == 'success' %}
+              Launch finished and connection details were detected.
+            {% else %}
+              Connection details are already visible from the current logs.
+            {% endif %}
+          </p>
+          <ul>
+            <li><strong>VS Code alias:</strong> <code>{{ task.summary_data.vscode_alias or 'vscode-server' }}</code></li>
+            <li><strong>Job:</strong> <code>{{ task.summary_data.job_id or 'n/a' }}</code></li>
+            <li><strong>Node:</strong> <code>{{ task.summary_data.node or 'n/a' }}</code></li>
+            <li><strong>Local forward:</strong> <code>localhost:{{ task.summary_data.local_forward_port or 'n/a' }}</code></li>
+          </ul>
+          <p><strong>Next step</strong></p>
+          <ol>
+            <li>Open VS Code.</li>
+            <li>Open Remote-SSH.</li>
+            <li>Connect to <code>{{ task.summary_data.vscode_alias or 'vscode-server' }}</code>.</li>
+          </ol>
+          <p><strong>If it fails</strong></p>
+          <ul>
+            <li>Check the task log tail below.</li>
+            <li>Verify local port <code>{{ task.summary_data.local_forward_port or 'n/a' }}</code> is still listening.</li>
+            <li>Re-run diagnostics if router / SSH / Slurm looks suspicious.</li>
+          </ul>
+        </div>
+      {% endif %}
+
+      <h4>Output tail</h4>
+      <pre>{{ task.stdout_tail or '(no output yet)' }}</pre>
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>No task selected.</p>
+    </div>
+  {% endif %}
+</div>

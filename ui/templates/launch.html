@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Launch</h1>
+<section class="card">
+  <p>This page is wired as an MVP scaffold. Full launch orchestration is not connected yet.</p>
+  <ul>
+    <li><strong>Profile:</strong> {{ profile.name or 'n/a' }}</li>
+    <li><strong>Mode:</strong> {{ profile.mode }}</li>
+    <li><strong>Destination:</strong> {{ profile.destination }}</li>
+    <li><strong>SSH Port:</strong> {{ profile.ssh_port }}</li>
+    <li><strong>Partition:</strong> {{ profile.partition }}</li>
+    <li><strong>Forward Port:</strong> {{ profile.local_forward_port }}</li>
+  </ul>
+  <form method="post" action="/launch/run">
+    <input type="hidden" name="profile_id" value="{{ profile.id }}">
+    <button class="button" type="submit">Launch (stub)</button>
+  </form>
+  {% if message %}
+  <div class="notice">{{ message }}</div>
+  {% endif %}
+</section>
+{% endblock %}

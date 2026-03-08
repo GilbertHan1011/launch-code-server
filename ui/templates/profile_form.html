@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ 'New Profile' if is_new else 'Edit Profile' }}</h1>
+<form method="post" action="/profiles/save" class="card form-grid">
+  <input type="hidden" name="profile_id" value="{{ profile.id }}">
+  <label>
+    <span>name</span>
+    <input name="name" value="{{ profile.name }}">
+  </label>
+  {% for field in fields %}
+  <label>
+    <span>{{ field.name }}</span>
+    {% if field.name == 'setup_proxy' %}
+      <select name="{{ field.name }}">
+        <option value="false" {% if not profile[field.name] %}selected{% endif %}>false</option>
+        <option value="true" {% if profile[field.name] %}selected{% endif %}>true</option>
+      </select>
+    {% else %}
+      <input name="{{ field.name }}" value="{{ profile[field.name] }}">
+    {% endif %}
+  </label>
+  {% endfor %}
+  <div class="actions">
+    <button class="button" type="submit">Save</button>
+    {% if not is_new %}
+    <button class="button danger" formaction="/profiles/{{ profile.id }}/delete" formmethod="post" type="submit">Delete</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

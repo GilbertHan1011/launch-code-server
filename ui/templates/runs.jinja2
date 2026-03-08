@@ -1,0 +1,39 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1>Runs</h1>
+      <p class="muted">Diagnostics and launch history in one place.</p>
+    </div>
+  </section>
+
+  <section class="history">
+    {% if runs %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Kind</th>
+            <th>Profile</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td>{{ run.timestamp or run.created_at or 'n/a' }}</td>
+              <td>{{ run.kind or 'n/a' }}</td>
+              <td>{{ run.profile_name or run.profile_id or 'n/a' }}</td>
+              <td>{{ run.summary or 'n/a' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">
+        <p>No runs recorded yet.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

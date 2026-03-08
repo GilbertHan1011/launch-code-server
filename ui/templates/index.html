@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Overview</h1>
+<div class="grid two">
+  <section class="card">
+    <h2>Profiles</h2>
+    <p>{{ profiles|length }} profile(s) available.</p>
+    {% if profile and profile.name %}
+    <p><strong>Selected:</strong> {{ profile.name }}</p>
+    {% endif %}
+    <a class="button" href="/profiles">Manage Profiles</a>
+  </section>
+  <section class="card">
+    <h2>Diagnostics</h2>
+    <p>Run connectivity and config checks for router, SSH, Slurm, and local forwarding.</p>
+    <a class="button" href="/diagnostics">Open Diagnostics</a>
+  </section>
+</div>
+<section class="card">
+  <h2>Launch</h2>
+  <p>Launch page is scaffolded and ready for wiring into the existing CLI workflow.</p>
+  <a class="button" href="/launch">Open Launch</a>
+</section>
+<section class="card">
+  <h2>Recent Runs</h2>
+  {% if runs %}
+    <ul>
+    {% for run in runs %}
+      <li><strong>{{ run.kind }}</strong> · {{ run.profile_name or run.profile_id or 'n/a' }} · {{ run.created_at }}<br>{{ run.summary }}</li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p>No runs recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

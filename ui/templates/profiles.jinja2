@@ -1,0 +1,61 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1>Profiles</h1>
+      <p class="muted">Manage connection profiles for launch_server.</p>
+    </div>
+    <a class="btn primary" href="/profiles/new">New profile</a>
+  </section>
+
+  <section class="summary">
+    <h2>Import profile JSON</h2>
+    <form class="form" method="post" action="/profiles/import">
+      <label>
+        Profile JSON
+        <textarea name="profile_json" rows="10" placeholder='{"name":"demo", "destination":"user@host"}'></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="btn" type="submit">Import</button>
+      </div>
+    </form>
+  </section>
+
+  {% if profiles %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Mode</th>
+          <th>Destination</th>
+          <th>Partition</th>
+          <th>CPUs</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for profile in profiles %}
+          <tr>
+            <td>{{ profile.name }}</td>
+            <td>{{ profile.mode }}</td>
+            <td>{{ profile.destination }}</td>
+            <td>{{ profile.partition }}</td>
+            <td>{{ profile.num_cpus }}</td>
+            <td class="actions">
+              <a class="btn" href="/profiles/{{ profile.id }}/edit">Edit</a>
+              <a class="btn" href="/profiles/{{ profile.id }}/export" target="_blank">Export</a>
+              <form method="post" action="/profiles/{{ profile.id }}/delete" class="inline">
+                <button class="btn danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty">
+      <p>No profiles yet. Create your first profile to get started.</p>
+    </div>
+  {% endif %}
+{% endblock %}

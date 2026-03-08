@@ -1,0 +1,33 @@
+{
+  "id": "launch-32cea0604248",
+  "kind": "launch",
+  "status": "stopped",
+  "created_at": "2026-03-08T02:13:36+08:00",
+  "updated_at": "2026-03-08T02:13:36+08:00",
+  "profile_id": "",
+  "profile_name": "demo",
+  "command": "launch_server user@example",
+  "argv": [
+    "launch_server",
+    "user@example"
+  ],
+  "log_path": "/home/gilberthan/disk1/projects/launch-code-server/ui/data/tasks/launch-32cea0604248.log",
+  "pid": null,
+  "return_code": null,
+  "duration_ms": null,
+  "stdout_tail": "",
+  "stderr_tail": "",
+  "error": "",
+  "summary_data": {
+    "job_id": "12345",
+    "ready": true
+  },
+  "scancel": {
+    "job_id": "12345",
+    "return_code": null,
+    "stdout": "",
+    "stderr": "[Errno 2] No such file or directory: 'scancel'",
+    "ok": false
+  },
+  "stopped_at": "2026-03-08T02:13:36+08:00"
+}
