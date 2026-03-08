@@ -129,7 +129,12 @@
   {% endif %}
 
   <section class="summary">
-    <h2>Current task</h2>
+    <h2>Interactive input</h2>
+    {% include "launch_input_panel.jinja2" %}
+  </section>
+
+  <section class="summary">
+    <h2>Current task status</h2>
     {% include "launch_status.jinja2" %}
   </section>
 

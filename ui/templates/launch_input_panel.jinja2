@@ -1,0 +1,71 @@
+{% if task %}
+  <div class="card">
+    <div class="card-header">
+      <h3>Interactive input</h3>
+      <span>{{ task.status }}</span>
+    </div>
+
+    {% if task.status in ['queued', 'running', 'pending'] %}
+      {% if task.awaiting_input %}
+        <div class="notice">
+          <strong>Interactive input requested.</strong> This task appears to be waiting for OTP/password input.
+        </div>
+      {% else %}
+        <div class="notice">
+          Input panel is kept static so you can click and type normally. If the task has not reached a prompt yet, wait for the log panel to show one before submitting input.
+        </div>
+      {% endif %}
+
+      <form id="task-input-form-{{ task.id }}"
+            method="post"
+            action="/launch/input/{{ task.id }}"
+            hx-post="/launch/input/{{ task.id }}"
+            hx-target="#task-status"
+            hx-swap="outerHTML"
+            class="form-inline">
+        <label>
+          OTP / input
+          <input id="task-input-{{ task.id }}"
+                 type="text"
+                 name="task_input"
+                 placeholder="Enter OTP or interactive input"
+                 autocomplete="one-time-code" />
+        </label>
+        <button class="btn primary" type="submit">Send input</button>
+      </form>
+
+      <form method="post"
+            action="/launch/stop/{{ task.id }}"
+            hx-post="/launch/stop/{{ task.id }}"
+            hx-target="#task-status"
+            hx-swap="outerHTML">
+        <button class="btn danger" type="submit">Stop task</button>
+      </form>
+
+      {% if task.input_count %}
+        <p><strong>Inputs submitted:</strong> {{ task.input_count }}</p>
+      {% endif %}
+    {% elif task.status == 'stopped' %}
+      <p><strong>Stopped at:</strong> {{ task.stopped_at or 'n/a' }}</p>
+      <p><strong>Stop info:</strong> {{ task.stop_info or 'manual stop requested' }}</p>
+      {% if task.scancel %}
+        <p><strong>scancel:</strong>
+          {% if task.scancel.ok %}
+            success for job <code>{{ task.scancel.job_id }}</code>
+          {% else %}
+            failed for job <code>{{ task.scancel.job_id }}</code>
+          {% endif %}
+        </p>
+        {% if task.scancel.stderr %}
+          <pre>{{ task.scancel.stderr }}</pre>
+        {% endif %}
+      {% endif %}
+    {% else %}
+      <p class="muted">This task is no longer running. Interactive input is disabled.</p>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p>No task selected.</p>
+  </div>
+{% endif %}
